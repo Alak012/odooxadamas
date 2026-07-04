@@ -14,6 +14,7 @@ import EmployeeDetails from './admin/EmployeeDetails';
 import Attendance from './Attendance';
 import TimeOff from './TimeOff';
 import Payroll from './Payroll';
+import EmployeeDashboard from './EmployeeDashboard';
 
 // ── Employee Cards View (Marketplace-style grid) ───────
 
@@ -62,13 +63,7 @@ const EmployeeCards = ({ user }) => {
   });
 
   if (!isAdmin) {
-    return (
-      <div className="p-12 text-center max-w-md mx-auto">
-        <Users size={48} className="mx-auto text-slate-300 mb-6" />
-        <h3 className="text-2xl font-bold text-slate-800 mb-2">Welcome, {user.displayName}</h3>
-        <p className="text-slate-500">Use the sidebar to navigate to your Attendance, Time Off, or Profile.</p>
-      </div>
-    );
+    return <EmployeeDashboard user={user} />;
   }
 
   return (
