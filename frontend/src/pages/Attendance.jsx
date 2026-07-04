@@ -115,8 +115,11 @@ const Attendance = ({ user }) => {
           </div>
           
           {statusMsg && (
-            <div className={`mt-4 text-sm font-bold ${statusMsg.includes('Error') ? 'text-red-500' : 'text-emerald-500'}`}>
-              {statusMsg}
+            <div className={`mt-4 p-4 text-sm rounded-lg border flex flex-col items-start gap-1 text-left ${statusMsg.includes('Error') ? 'bg-red-50 text-red-600 border-red-200' : 'bg-emerald-50 text-emerald-600 border-emerald-200'}`}>
+              <div className="flex gap-2 items-center">
+                <span className="font-semibold">{statusMsg.includes('Error') ? 'Error:' : 'Success:'}</span>
+                <span>{statusMsg.replace('Error: ', '')}</span>
+              </div>
             </div>
           )}
 

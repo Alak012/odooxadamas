@@ -8,6 +8,8 @@ const TimeOff = ({ user }) => {
   const [loading, setLoading] = useState(false);
   const [myLeaves, setMyLeaves] = useState([]);
   const [allLeaves, setAllLeaves] = useState([]);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
   
   const [formData, setFormData] = useState({
     type: 'Paid',
@@ -46,6 +48,8 @@ const TimeOff = ({ user }) => {
   const handleApply = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setErrorMsg('');
+    setSuccessMsg('');
     try {
       const res = await fetch('http://localhost:5000/api/leave/apply', {
         method: 'POST',
@@ -55,18 +59,28 @@ const TimeOff = ({ user }) => {
         },
         body: JSON.stringify(formData)
       });
-      if (!res.ok) throw new Error('Failed to apply');
-      alert('Leave requested successfully!');
+      if (!res.ok) {
+        const data = await res.json().catch(()=>({}));
+        throw new Error(data.error || 'Failed to apply');
+      }
+      setSuccessMsg('Leave requested successfully!');
       setFormData({ type: 'Paid', startDate: '', endDate: '', reason: '' });
       fetchMyLeaves();
+      setTimeout(() => setSuccessMsg(''), 3000);
     } catch (error) {
-      alert(error.message);
+      setErrorMsg(error.message);
     } finally {
       setLoading(false);
     }
   };
 
   const handleStatusChange = async (id, status) => {
+    setErrorMsg('');
+    setSuccessMsg('');
+    
+    // Optimistic UI Update for instant feedback
+    setAllLeaves(prev => prev.map(l => l.id === id ? { ...l, status } : l));
+
     try {
       const res = await fetch(`http://localhost:5000/api/leave/${id}/status`, {
         method: 'PUT',
@@ -76,10 +90,15 @@ const TimeOff = ({ user }) => {
         },
         body: JSON.stringify({ status })
       });
-      if (!res.ok) throw new Error('Failed to update status');
+      if (!res.ok) {
+        const data = await res.json().catch(()=>({}));
+        throw new Error(data.error || 'Failed to update status');
+      }
       fetchAllLeaves();
+      setSuccessMsg(`Leave request ${status.toLowerCase()} successfully!`);
+      setTimeout(() => setSuccessMsg(''), 3000);
     } catch (error) {
-      alert(error.message);
+      setErrorMsg(error.message);
     }
   };
 
@@ -100,6 +119,18 @@ const TimeOff = ({ user }) => {
           </div>
         )}
       </div>
+
+      {errorMsg && (
+        <div className="p-4 bg-red-50 text-red-600 text-sm rounded-lg border border-red-200 flex items-start gap-2">
+          <span className="font-semibold">Error:</span> {errorMsg}
+        </div>
+      )}
+      
+      {successMsg && (
+        <div className="p-4 bg-emerald-50 text-emerald-600 text-sm rounded-lg border border-emerald-200 flex items-start gap-2">
+          <span className="font-semibold">Success:</span> {successMsg}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
@@ -203,20 +234,24 @@ const TimeOff = ({ user }) => {
                           </span>
                         </td>
                         <td className="py-3 text-right space-x-2">
-                          <button 
-                            disabled={leave.status === 'Approved'}
-                            onClick={() => handleStatusChange(leave.id, 'Approved')}
-                            className="text-xs font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded transition-colors disabled:opacity-50"
-                          >
-                            Approve
-                          </button>
-                          <button 
-                            disabled={leave.status === 'Rejected'}
-                            onClick={() => handleStatusChange(leave.id, 'Rejected')}
-                            className="text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded transition-colors disabled:opacity-50"
-                          >
-                            Reject
-                          </button>
+                          {leave.status === 'Pending' ? (
+                            <div className="flex justify-end gap-2">
+                              <button 
+                                onClick={() => handleStatusChange(leave.id, 'Approved')}
+                                className="text-xs font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded transition-colors"
+                              >
+                                Approve
+                              </button>
+                              <button 
+                                onClick={() => handleStatusChange(leave.id, 'Rejected')}
+                                className="text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded transition-colors"
+                              >
+                                Reject
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-xs font-semibold text-slate-400">Locked</span>
+                          )}
                         </td>
                       </tr>
                     ))

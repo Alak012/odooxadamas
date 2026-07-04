@@ -8,6 +8,8 @@ const Payroll = ({ user }) => {
   const [loading, setLoading] = useState(false);
   const [payrolls, setPayrolls] = useState([]);
   const [advances, setAdvances] = useState([]);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
   
   // Advance form state
   const [advanceAmt, setAdvanceAmt] = useState('');
@@ -47,6 +49,8 @@ const Payroll = ({ user }) => {
   const handleRequestAdvance = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setErrorMsg('');
+    setSuccessMsg('');
     try {
       const res = await fetch('http://localhost:5000/api/payroll/advance', {
         method: 'POST',
@@ -56,18 +60,28 @@ const Payroll = ({ user }) => {
         },
         body: JSON.stringify({ amount: parseFloat(advanceAmt), reason: advanceReason, monthDeduction: advanceMonth })
       });
-      if (!res.ok) throw new Error('Failed to request advance');
-      alert('Advance requested successfully!');
+      if (!res.ok) {
+        const data = await res.json().catch(()=>({}));
+        throw new Error(data.error || 'Failed to request advance');
+      }
+      setSuccessMsg('Advance requested successfully!');
       setAdvanceAmt('');
       setAdvanceReason('');
+      setTimeout(() => setSuccessMsg(''), 3000);
     } catch (error) {
-      alert(error.message);
+      setErrorMsg(error.message);
     } finally {
       setLoading(false);
     }
   };
 
   const handleAdvanceStatus = async (id, status) => {
+    setErrorMsg('');
+    setSuccessMsg('');
+    
+    // Optimistic UI Update for instant feedback
+    setAdvances(prev => prev.map(a => a.id === id ? { ...a, status } : a));
+
     try {
       const res = await fetch(`http://localhost:5000/api/payroll/advance/${id}/status`, {
         method: 'PUT',
@@ -77,26 +91,34 @@ const Payroll = ({ user }) => {
         },
         body: JSON.stringify({ status })
       });
-      if (!res.ok) throw new Error('Failed to update status');
+      if (!res.ok) {
+        const data = await res.json().catch(()=>({}));
+        throw new Error(data.error || 'Failed to update status');
+      }
       fetchAdvances();
+      setSuccessMsg(`Advance ${status.toLowerCase()} successfully!`);
+      setTimeout(() => setSuccessMsg(''), 3000);
     } catch (error) {
-      alert(error.message);
+      setErrorMsg(error.message);
     }
   };
 
   const handleGeneratePayroll = async () => {
     setLoading(true);
+    setErrorMsg('');
+    setSuccessMsg('');
     try {
       const res = await fetch(`http://localhost:5000/api/payroll/generate/${genMonth}`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      alert(`Payroll generated for ${data.count} employees!`);
+      if (!res.ok) throw new Error(data.error || 'Failed to generate payroll');
+      setSuccessMsg(`Payroll generated for ${data.count} employees!`);
       fetchPayrolls();
+      setTimeout(() => setSuccessMsg(''), 3000);
     } catch (error) {
-      alert(error.message);
+      setErrorMsg(error.message);
     } finally {
       setLoading(false);
     }
@@ -105,6 +127,18 @@ const Payroll = ({ user }) => {
   return (
     <div className="p-8 max-w-6xl mx-auto space-y-8">
       <h1 className="text-3xl font-bold text-slate-800">Payroll & Compensation</h1>
+
+      {errorMsg && (
+        <div className="p-4 bg-red-50 text-red-600 text-sm rounded-lg border border-red-200 flex items-start gap-2">
+          <span className="font-semibold">Error:</span> {errorMsg}
+        </div>
+      )}
+      
+      {successMsg && (
+        <div className="p-4 bg-emerald-50 text-emerald-600 text-sm rounded-lg border border-emerald-200 flex items-start gap-2">
+          <span className="font-semibold">Success:</span> {successMsg}
+        </div>
+      )}
 
       {isAdmin && (
         <Card className="p-6 bg-gradient-to-br from-indigo-50 to-white border-indigo-100 shadow-indigo-100/50">
