@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, Link, useNavigate } from 'react-router-dom';
+import { Routes, Route, Link, useNavigate, Navigate } from 'react-router-dom';
 import { Users, Plus, Cpu, FileText, FlaskConical } from 'lucide-react';
 import CreateEmployee from './admin/CreateEmployee';
 import ManageAdmins from './admin/ManageAdmins';
@@ -11,6 +11,9 @@ import { Badge } from '../components/ui/Badge';
 import { SegmentedControl } from '../components/ui/SegmentedControl';
 import ShellLayout from '../components/layout/ShellLayout';
 import EmployeeDetails from './admin/EmployeeDetails';
+import Attendance from './Attendance';
+import TimeOff from './TimeOff';
+import Payroll from './Payroll';
 
 // ── Employee Cards View (Marketplace-style grid) ───────
 
@@ -233,7 +236,11 @@ const Dashboard = () => {
     <ShellLayout user={user}>
       <Routes>
         <Route path="/" element={<EmployeeCards user={user} />} />
-        <Route path="/employee/:id" element={<div className="p-8 md:p-12"><EmployeeDetails /></div>} />
+        <Route path="/employee/:id" element={<EmployeeDetails user={user} />} />
+        <Route path="/my-profile" element={<Navigate to={`/dashboard/employee/${user?.id}`} replace />} />
+        <Route path="/attendance" element={<Attendance user={user} />} />
+        <Route path="/time-off" element={<TimeOff user={user} />} />
+        <Route path="/payroll" element={<Payroll user={user} />} />
         <Route path="/add-employee" element={<div className="p-8 md:p-12"><CreateEmployee /></div>} />
         <Route path="/invite-employee" element={<div className="p-8 md:p-12"><InviteEmployee /></div>} />
         <Route path="/manage-admins" element={<div className="p-8 md:p-12"><ManageAdmins /></div>} />

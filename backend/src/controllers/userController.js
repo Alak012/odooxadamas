@@ -199,6 +199,57 @@ const updateMyProfile = async (req, res) => {
   }
 };
 
+const updateEmployeeById = async (req, res) => {
+  try {
+    const targetId = req.params.id;
+    const isSelf = req.user.id === targetId;
+    const isAdmin = req.user.role === 'Admin';
+    
+    if (!isSelf && !isAdmin) {
+      return res.status(403).json({ error: 'Not authorized to edit this profile' });
+    }
+
+    const { 
+      displayName, phone, // Personal Info (isSelf || isAdmin)
+      department, jobPosition, workingDaysPerWeek, breakTimeHrs, baseSalary, totalLeavesAllowed // Work Info (isAdmin only)
+    } = req.body;
+
+    const updateData = {};
+    
+    // Anyone can edit these fields if they own the profile (or if admin is editing them)
+    if (isSelf || isAdmin) {
+      if (displayName !== undefined) updateData.displayName = displayName;
+      if (phone !== undefined) updateData.phone = phone;
+    }
+
+    // ONLY Admins can edit these fields
+    if (isAdmin) {
+      if (department !== undefined) updateData.department = department;
+      if (jobPosition !== undefined) updateData.jobPosition = jobPosition;
+      if (workingDaysPerWeek !== undefined) updateData.workingDaysPerWeek = workingDaysPerWeek;
+      if (breakTimeHrs !== undefined) updateData.breakTimeHrs = breakTimeHrs;
+      if (baseSalary !== undefined) updateData.baseSalary = baseSalary;
+      if (totalLeavesAllowed !== undefined) updateData.totalLeavesAllowed = totalLeavesAllowed;
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: targetId },
+      data: updateData,
+      select: {
+        id: true, employeeId: true, email: true, displayName: true,
+        department: true, jobPosition: true, role: true, status: true,
+        avatar: true, phone: true, location: true, workingDaysPerWeek: true,
+        breakTimeHrs: true, baseSalary: true, totalLeavesAllowed: true, leavesTaken: true
+      }
+    });
+
+    res.json(updatedUser);
+  } catch (error) {
+    console.error('Update employee by ID error:', error);
+    res.status(400).json({ error: error.message });
+  }
+};
+
 const getAdminEmails = async (req, res) => {
   try {
     const emails = await prisma.adminEmail.findMany();
@@ -299,5 +350,6 @@ module.exports = {
   removeAdminEmail,
   getInvitedEmails,
   inviteEmail,
-  removeInvitedEmail
+  removeInvitedEmail,
+  updateEmployeeById
 };

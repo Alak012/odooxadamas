@@ -38,9 +38,9 @@ io.on('connection', (socket) => {
 // Routes Placeholder
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/users', require('./routes/users'));
-// app.use('/api/attendance', require('./routes/attendance'));
-// app.use('/api/leave', require('./routes/leave'));
-// app.use('/api/payroll', require('./routes/payroll'));
+app.use('/api/attendance', require('./routes/attendance'));
+app.use('/api/leave', require('./routes/leave'));
+app.use('/api/payroll', require('./routes/payroll'));
 
 const PORT = process.env.PORT || 5000;
 

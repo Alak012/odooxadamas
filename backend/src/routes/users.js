@@ -29,4 +29,7 @@ router.delete('/invited-emails/:email', auth, authorize('Admin'), userController
 // Any authenticated user: View another employee (read-only card click)
 router.get('/:id', auth, userController.getEmployeeById);
 
+// Update employee (RBAC enforced in controller)
+router.put('/:id', auth, userController.updateEmployeeById);
+
 module.exports = router;

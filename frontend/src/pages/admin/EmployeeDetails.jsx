@@ -1,12 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { User, Mail, Phone, Building, Briefcase, MapPin, Calendar, Clock, ArrowLeft } from 'lucide-react';
+import { User, Mail, Phone, Building, Briefcase, MapPin, Calendar, Clock, ArrowLeft, Edit2, X, DollarSign } from 'lucide-react';
 
-const EmployeeDetails = () => {
+const EmployeeDetails = ({ user: currentUser }) => {
   const { id } = useParams();
   const [employee, setEmployee] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  
+  // Edit state
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editFormData, setEditFormData] = useState({});
+  const [isSaving, setIsSaving] = useState(false);
+  
+  const isAdmin = currentUser?.role === 'Admin';
+  const isSelf = currentUser?.id === id;
 
   useEffect(() => {
     const fetchEmployee = async () => {
@@ -38,11 +46,123 @@ const EmployeeDetails = () => {
         <Link to="/dashboard" className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-primary-600 transition-colors bg-white px-4 py-2 rounded-lg border border-slate-200 shadow-sm hover:shadow">
           <ArrowLeft size={16} /> Back to Directory
         </Link>
-        <div className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-100 text-emerald-700 border border-emerald-200 shadow-sm">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 mr-2 animate-pulse"></span>
-          {employee.status || 'Active'}
+        <div className="flex gap-2">
+          {(isAdmin || isSelf) && (
+            <button 
+              onClick={() => {
+                setEditFormData(employee);
+                setIsEditModalOpen(true);
+              }}
+              className="inline-flex items-center gap-2 text-sm font-semibold text-white transition-colors bg-primary-600 hover:bg-primary-700 px-4 py-2 rounded-lg shadow-sm"
+            >
+              <Edit2 size={16} /> Edit Profile
+            </button>
+          )}
+          <div className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-100 text-emerald-700 border border-emerald-200 shadow-sm">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 mr-2 animate-pulse"></span>
+            {employee.status || 'Active'}
+          </div>
         </div>
       </div>
+
+      {isEditModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center p-6 border-b border-slate-100">
+              <h2 className="text-xl font-bold text-slate-800">Edit {isAdmin ? 'Employee Data' : 'Personal Profile'}</h2>
+              <button onClick={() => setIsEditModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+                <X size={20} />
+              </button>
+            </div>
+            <form 
+              className="p-6 space-y-4"
+              onSubmit={async (e) => {
+                e.preventDefault();
+                setIsSaving(true);
+                try {
+                  const token = localStorage.getItem('token');
+                  const res = await fetch(`http://localhost:5000/api/users/${id}`, {
+                    method: 'PUT',
+                    headers: { 
+                      'Authorization': `Bearer ${token}`,
+                      'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(editFormData)
+                  });
+                  if (!res.ok) throw new Error('Failed to update');
+                  const updatedData = await res.json();
+                  setEmployee(updatedData);
+                  setIsEditModalOpen(false);
+                } catch (err) {
+                  alert(err.message);
+                } finally {
+                  setIsSaving(false);
+                }
+              }}
+            >
+              {/* Employee can edit Personal Details */}
+              {isSelf && (
+                <>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1">Display Name</label>
+                    <input type="text" value={editFormData.displayName || ''} onChange={e => setEditFormData({...editFormData, displayName: e.target.value})} className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 outline-none" required />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1">Phone Number</label>
+                    <input type="tel" value={editFormData.phone || ''} onChange={e => setEditFormData({...editFormData, phone: e.target.value})} className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 outline-none" />
+                  </div>
+                </>
+              )}
+
+              {/* Admin can edit Work Details */}
+              {isAdmin && (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-1">Department</label>
+                      <input type="text" value={editFormData.department || ''} onChange={e => setEditFormData({...editFormData, department: e.target.value})} className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 outline-none" required />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-1">Job Position</label>
+                      <input type="text" value={editFormData.jobPosition || ''} onChange={e => setEditFormData({...editFormData, jobPosition: e.target.value})} className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 outline-none" required />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-1">Working Days / Week</label>
+                      <input type="number" min="1" max="7" value={editFormData.workingDaysPerWeek || 5} onChange={e => setEditFormData({...editFormData, workingDaysPerWeek: parseInt(e.target.value)})} className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 outline-none" required />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-1">Daily Break (Hrs)</label>
+                      <input type="number" step="0.5" min="0" max="4" value={editFormData.breakTimeHrs || 1} onChange={e => setEditFormData({...editFormData, breakTimeHrs: parseFloat(e.target.value)})} className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 outline-none" required />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-1">Base Salary (Annual)</label>
+                      <div className="relative">
+                        <DollarSign size={16} className="absolute left-3 top-3 text-slate-400" />
+                        <input type="number" value={editFormData.baseSalary || 0} onChange={e => setEditFormData({...editFormData, baseSalary: parseFloat(e.target.value)})} className="w-full pl-9 p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 outline-none" required />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-1">Total Leaves Allowed</label>
+                      <input type="number" value={editFormData.totalLeavesAllowed || 20} onChange={e => setEditFormData({...editFormData, totalLeavesAllowed: parseInt(e.target.value)})} className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 outline-none" required />
+                    </div>
+                  </div>
+                </>
+              )}
+              
+              <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-100">
+                <button type="button" onClick={() => setIsEditModalOpen(false)} className="px-4 py-2 font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">Cancel</button>
+                <button type="submit" disabled={isSaving} className="px-4 py-2 font-semibold text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors disabled:opacity-50">
+                  {isSaving ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
         {/* Header section with gradient pattern */}
@@ -173,6 +293,21 @@ const EmployeeDetails = () => {
                     </p>
                   </div>
                 </div>
+
+                {/* Salary Info (Visible to self or Admin) */}
+                {(isAdmin || isSelf) && (
+                  <div className="flex items-center gap-4 group border-t border-slate-100 pt-6 mt-6">
+                    <div className="w-12 h-12 rounded-xl bg-green-50 text-green-600 flex items-center justify-center group-hover:bg-green-600 group-hover:text-white transition-colors duration-300 shadow-sm">
+                      <DollarSign size={20} />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs font-bold text-slate-400 uppercase mb-0.5">Base Salary (Annual)</p>
+                      <p className="text-lg font-bold text-slate-800">
+                        ${(employee.baseSalary || 0).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
             

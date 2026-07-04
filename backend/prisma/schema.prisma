@@ -63,6 +63,9 @@ model User {
   // Work schedule
   workingDaysPerWeek Int       @default(5)
   breakTimeHrs       Float     @default(1)
+  baseSalary         Float     @default(0)
+  totalLeavesAllowed Int       @default(20)
+  leavesTaken        Int       @default(0)
 
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
@@ -70,6 +73,7 @@ model User {
   attendances        Attendance[]
   leaves             Leave[]
   payrolls           Payroll[]
+  advances           SalaryAdvance[]
 }
 
 enum AttendanceStatus {
@@ -90,6 +94,10 @@ model Attendance {
   extraHours Float    @default(0)
   breakHours Float    @default(1)
   status     AttendanceStatus @default(Present)
+  
+  // Geofencing data
+  latitude   Float?
+  longitude  Float?
 
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
@@ -159,6 +167,33 @@ model AdminEmail {
 model InvitedEmployee {
   id        String   @id @default(uuid())
   email     String   @unique
+  createdAt DateTime @default(now())
+}
+
+enum AdvanceStatus {
+  Pending
+  Approved
+  Rejected
+}
+
+model SalaryAdvance {
+  id             String        @id @default(uuid())
+  userId         String
+  user           User          @relation(fields: [userId], references: [id])
+  amount         Float
+  reason         String
+  monthDeduction String        // e.g. '2026-07'
+  status         AdvanceStatus @default(Pending)
+  
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
+
+model Announcement {
+  id        String   @id @default(uuid())
+  adminId   String
+  message   String
+  
   createdAt DateTime @default(now())
 }
 
