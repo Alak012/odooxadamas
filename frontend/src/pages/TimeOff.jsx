@@ -5,11 +5,13 @@ import { Plus, X, Calendar as CalendarIcon, UploadCloud, Info, ChevronLeft, Chev
 import { format, startOfYear, addMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, getDay, isAfter, isBefore, startOfDay, subMonths } from 'date-fns';
 
 const HOLIDAYS = [
-  { date: '2026-01-01', name: 'New Year\'s Day' },
-  { date: '2026-05-01', name: 'Labor Day' },
-  { date: '2026-07-04', name: 'Independence Day' },
-  { date: '2026-11-26', name: 'Thanksgiving Day' },
-  { date: '2026-12-25', name: 'Christmas Day' },
+  { date: '2026-01-26', name: 'Republic Day' },
+  { date: '2026-03-03', name: 'Maha Shivaratri' },
+  { date: '2026-03-24', name: 'Holi' },
+  { date: '2026-08-15', name: 'Independence Day' },
+  { date: '2026-10-02', name: 'Gandhi Jayanti' },
+  { date: '2026-11-08', name: 'Diwali' },
+  { date: '2026-12-25', name: 'Christmas Day' }
 ];
 
 const LEAVE_COLORS = {
@@ -259,8 +261,8 @@ const NewTimeOffModal = ({ isOpen, onClose, user, onSuccess }) => {
       setError('Please select a valid date range.');
       return;
     }
-    if (formData.type === 'Sick' && !formData.attachment) {
-      setError('Attachment is required for sick leave.');
+    if (!formData.attachment) {
+      setError('A supporting document (attachment) is required for all time off requests.');
       return;
     }
 
@@ -268,20 +270,21 @@ const NewTimeOffModal = ({ isOpen, onClose, user, onSuccess }) => {
     setError('');
 
     try {
-      const payload = {
-        type: formData.type,
-        startDate: format(formData.startDate, 'yyyy-MM-dd'),
-        endDate: format(formData.endDate, 'yyyy-MM-dd'),
-        reason: formData.reason || `Applied via self-view (${allocatedDays} days)`
-      };
+      const payload = new FormData();
+      payload.append('type', formData.type);
+      payload.append('startDate', format(formData.startDate, 'yyyy-MM-dd'));
+      payload.append('endDate', format(formData.endDate, 'yyyy-MM-dd'));
+      payload.append('reason', formData.reason || `Applied via self-view (${allocatedDays} days)`);
+      if (formData.attachment) {
+        payload.append('attachment', formData.attachment);
+      }
 
       const res = await fetch('http://localhost:5000/api/leave/apply', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
-        body: JSON.stringify(payload)
+        body: payload
       });
 
       if (!res.ok) {
@@ -360,30 +363,28 @@ const NewTimeOffModal = ({ isOpen, onClose, user, onSuccess }) => {
               </span>
             </div>
 
-            {formData.type === 'Sick' && (
-              <div className="animate-in fade-in slide-in-from-top-2 duration-300">
-                <label className="block text-sm font-semibold text-slate-700 mb-1.5 flex items-center gap-1">
-                  Attachment <span className="text-red-500">*</span>
-                </label>
-                <p className="text-xs text-slate-500 mb-2">Required for sick leave certificate.</p>
-                <div 
-                  onClick={() => fileInputRef.current?.click()}
-                  className="border-2 border-dashed border-slate-200 rounded-xl p-6 text-center cursor-pointer hover:border-indigo-400 hover:bg-indigo-50 transition-all group"
-                >
-                  <UploadCloud size={24} className="mx-auto text-slate-400 mb-2 group-hover:text-indigo-500 transition-colors" />
-                  <span className="text-sm font-semibold text-slate-600 group-hover:text-indigo-700">
-                    {formData.attachment ? formData.attachment.name : 'Click to upload certificate'}
-                  </span>
-                  <input 
-                    type="file" 
-                    ref={fileInputRef} 
-                    className="hidden" 
-                    onChange={e => setFormData({...formData, attachment: e.target.files[0]})} 
-                    accept=".pdf,.jpg,.jpeg,.png"
-                  />
-                </div>
+            <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+              <label className="block text-sm font-semibold text-slate-700 mb-1.5 flex items-center gap-1">
+                Supporting Document <span className="text-red-500">*</span>
+              </label>
+              <p className="text-xs text-slate-500 mb-2">Required proof for your time off request.</p>
+              <div 
+                onClick={() => fileInputRef.current?.click()}
+                className="border-2 border-dashed border-slate-200 rounded-xl p-6 text-center cursor-pointer hover:border-indigo-400 hover:bg-indigo-50 transition-all group"
+              >
+                <UploadCloud size={24} className="mx-auto text-slate-400 mb-2 group-hover:text-indigo-500 transition-colors" />
+                <span className="text-sm font-semibold text-slate-600 group-hover:text-indigo-700">
+                  {formData.attachment ? formData.attachment.name : 'Click to upload document'}
+                </span>
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  className="hidden" 
+                  onChange={e => setFormData({...formData, attachment: e.target.files[0]})} 
+                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                />
               </div>
-            )}
+            </div>
           </form>
         </div>
 

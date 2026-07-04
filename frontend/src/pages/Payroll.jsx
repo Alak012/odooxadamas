@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { FileText, DollarSign, Download, PlusCircle } from 'lucide-react';
+import { FileText, IndianRupee, Download, PlusCircle } from 'lucide-react';
 
 const Payroll = ({ user }) => {
   const [loading, setLoading] = useState(false);
@@ -163,21 +163,21 @@ const Payroll = ({ user }) => {
         {!isAdmin && (
           <Card className="p-6 col-span-1">
             <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-              <DollarSign size={20} className="text-emerald-500" /> Request Advance
+              <IndianRupee size={20} className="text-emerald-500" /> Request Advance
             </h3>
             <p className="text-xs text-slate-500 mb-4">Advances will be automatically deducted from your selected month's payslip.</p>
             <form onSubmit={handleRequestAdvance} className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1">Amount ($)</label>
-                <input type="number" required value={advanceAmt} onChange={e => setAdvanceAmt(e.target.value)} className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" />
+                <label className="block text-sm font-semibold text-slate-700 mb-1">Amount (₹)</label>
+                <input type="number" required value={advanceAmt} onChange={e => setAdvanceAmt(e.target.value)} className="w-full p-2 border rounded-md focus:ring-2 focus:ring-emerald-500 outline-none" />
               </div>
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1">Deduction Month</label>
-                <input type="month" required value={advanceMonth} onChange={e => setAdvanceMonth(e.target.value)} className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" />
+                <input type="month" required value={advanceMonth} onChange={e => setAdvanceMonth(e.target.value)} className="w-full p-2 border rounded-md focus:ring-2 focus:ring-emerald-500 outline-none" />
               </div>
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1">Reason</label>
-                <input type="text" required value={advanceReason} onChange={e => setAdvanceReason(e.target.value)} className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" />
+                <input type="text" required value={advanceReason} onChange={e => setAdvanceReason(e.target.value)} className="w-full p-2 border rounded-md focus:ring-2 focus:ring-emerald-500 outline-none" />
               </div>
               <Button type="submit" disabled={loading} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white">
                 Submit Request
@@ -199,7 +199,7 @@ const Payroll = ({ user }) => {
                       <p className="font-bold text-slate-800">{adv.user?.displayName}</p>
                       <p className="text-xs text-slate-500">Deduct: {adv.monthDeduction}</p>
                     </div>
-                    <p className="font-bold text-emerald-600">${adv.amount}</p>
+                    <p className="font-bold text-emerald-600">₹{adv.amount}</p>
                   </div>
                   <p className="text-sm text-slate-600 italic mb-3">"{adv.reason}"</p>
                   <div className="flex gap-2">
@@ -238,8 +238,8 @@ const Payroll = ({ user }) => {
                       <td className="py-3 font-semibold text-slate-800">{pay.month}</td>
                       {isAdmin && <td className="py-3 text-sm text-slate-600">{pay.user?.displayName}</td>}
                       <td className="py-3 text-sm text-slate-600">{pay.payableDays} days</td>
-                      <td className="py-3 text-sm text-slate-600">${pay.grossSalary.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-                      <td className="py-3 font-bold text-emerald-600">${pay.netSalary.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                      <td className="py-3 text-sm text-slate-600">₹{pay.grossSalary.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                      <td className="py-3 font-bold text-emerald-600">₹{pay.netSalary.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
                       <td className="py-3 text-right">
                         <button className="inline-flex items-center gap-1 text-xs font-bold text-slate-600 hover:text-indigo-600 transition-colors px-2 py-1 rounded">
                           <Download size={14} /> PDF

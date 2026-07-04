@@ -55,6 +55,15 @@ model User {
   accountNumber      String?
   ifscCode           String?
   panNo              String?
+  aadharNo           String?
+  voterIdNo          String?
+  
+  // Document Proofs (Paths)
+  aadharDoc          String?
+  panDoc             String?
+  voterDoc           String?
+  addressProofDoc    String?
+  
   uanNo              String?
   empCode            String?
   dateOfBirth        DateTime?

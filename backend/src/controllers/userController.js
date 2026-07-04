@@ -93,6 +93,11 @@ const getMyProfile = async (req, res) => {
 
 const getAllEmployees = async (req, res) => {
   try {
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
     const users = await prisma.user.findMany({
       where: {
         email: { not: 'barshanmajumdar249@gmail.com' } // Hide permanent admin from employee cards
@@ -109,7 +114,24 @@ const getAllEmployees = async (req, res) => {
         phone: true,
         jobPosition: true,
         dateOfJoining: true,
-        createdAt: true
+        createdAt: true,
+        attendances: {
+          where: {
+            date: {
+              gte: today,
+              lt: tomorrow
+            }
+          },
+          take: 1
+        },
+        leaves: {
+          where: {
+            status: 'Approved',
+            startDate: { lte: today },
+            endDate: { gte: today }
+          },
+          take: 1
+        }
       },
       orderBy: { createdAt: 'desc' }
     });
@@ -124,37 +146,26 @@ const getAllEmployees = async (req, res) => {
 
 const getEmployeeById = async (req, res) => {
   try {
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
     const user = await prisma.user.findUnique({
       where: { id: req.params.id },
-      select: {
-        id: true,
-        employeeId: true,
-        email: true,
-        displayName: true,
-        department: true,
-        jobPosition: true,
-        role: true,
-        status: true,
-        avatar: true,
-        phone: true,
-        about: true,
-        skills: true,
-        certifications: true,
-        residingAddress: true,
-        dateOfBirth: true,
-        dateOfJoining: true,
-        gender: true,
-        nationality: true,
-        maritalStatus: true,
-        location: true,
-        companyName: true,
-        workingDaysPerWeek: true,
-        breakTimeHrs: true,
-        managerId: true,
+      include: {
         manager: {
           select: { id: true, displayName: true }
         },
-        createdAt: true
+        attendances: {
+          where: {
+            date: {
+              gte: today,
+              lt: tomorrow
+            }
+          },
+          take: 1
+        }
       }
     });
 
@@ -162,7 +173,8 @@ const getEmployeeById = async (req, res) => {
       return res.status(404).json({ error: 'Employee not found' });
     }
 
-    res.json(user);
+    const { password: _, ...safeUser } = user;
+    res.json(safeUser);
   } catch (error) {
     console.error('Get employee by id error:', error);
     res.status(500).json({ error: error.message });
@@ -176,13 +188,28 @@ const updateMyProfile = async (req, res) => {
     const allowedFields = [
       'displayName', 'phone', 'about', 'skills', 'certifications',
       'residingAddress', 'personalEmail', 'gender', 'nationality',
-      'maritalStatus', 'location', 'dateOfBirth'
+      'maritalStatus', 'location', 'dateOfBirth', 'aadharNo', 'panNo', 'voterIdNo',
+      'bankName', 'accountNumber', 'ifscCode', 'uanNo', 'empCode', 'avatar'
     ];
+
+    const currentUser = await prisma.user.findUnique({ where: { id: req.user.id } });
+    if (!currentUser) throw new Error('User not found');
 
     const updateData = {};
     for (const field of allowedFields) {
       if (req.body[field] !== undefined) {
-        updateData[field] = req.body[field];
+        // Prevent editing locked fields if they already have a value
+        const lockedFields = ['aadharNo', 'panNo', 'voterIdNo', 'dateOfBirth', 'bankName', 'accountNumber', 'ifscCode', 'nationality', 'personalEmail', 'gender', 'maritalStatus', 'uanNo', 'empCode'];
+        if (lockedFields.includes(field) && currentUser[field]) {
+           // Skip updating this field because it's already set
+           continue;
+        }
+        
+        if (field === 'dateOfBirth' && req.body[field]) {
+           updateData[field] = new Date(req.body[field]);
+        } else {
+           updateData[field] = req.body[field];
+        }
       }
     }
 
@@ -210,7 +237,7 @@ const updateEmployeeById = async (req, res) => {
     }
 
     const { 
-      displayName, phone, // Personal Info (isSelf || isAdmin)
+      displayName, phone, aadharNo, panNo, voterIdNo, residingAddress, dateOfBirth, // Personal Info (isSelf || isAdmin)
       department, jobPosition, workingDaysPerWeek, breakTimeHrs, baseSalary, totalLeavesAllowed // Work Info (isAdmin only)
     } = req.body;
 
@@ -220,6 +247,11 @@ const updateEmployeeById = async (req, res) => {
     if (isSelf || isAdmin) {
       if (displayName !== undefined) updateData.displayName = displayName;
       if (phone !== undefined) updateData.phone = phone;
+      if (aadharNo !== undefined) updateData.aadharNo = aadharNo;
+      if (panNo !== undefined) updateData.panNo = panNo;
+      if (voterIdNo !== undefined) updateData.voterIdNo = voterIdNo;
+      if (residingAddress !== undefined) updateData.residingAddress = residingAddress;
+      if (dateOfBirth !== undefined) updateData.dateOfBirth = dateOfBirth;
     }
 
     // ONLY Admins can edit these fields
@@ -235,15 +267,15 @@ const updateEmployeeById = async (req, res) => {
     const updatedUser = await prisma.user.update({
       where: { id: targetId },
       data: updateData,
-      select: {
-        id: true, employeeId: true, email: true, displayName: true,
-        department: true, jobPosition: true, role: true, status: true,
-        avatar: true, phone: true, location: true, workingDaysPerWeek: true,
-        breakTimeHrs: true, baseSalary: true, totalLeavesAllowed: true, leavesTaken: true
+      include: {
+        manager: {
+          select: { id: true, displayName: true }
+        }
       }
     });
 
-    res.json(updatedUser);
+    const { password: _, ...safeUser } = updatedUser;
+    res.json(safeUser);
   } catch (error) {
     console.error('Update employee by ID error:', error);
     res.status(400).json({ error: error.message });
@@ -339,6 +371,41 @@ const removeInvitedEmail = async (req, res) => {
   }
 };
 
+// ── Upload KYC Docs ──────────────────────────────────────
+const uploadKycDocs = async (req, res) => {
+  try {
+    const targetId = req.params.id;
+    const isSelf = req.user.id === targetId;
+    const isAdmin = req.user.role === 'Admin';
+    
+    if (!isSelf && !isAdmin) {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+
+    const updateData = {};
+    if (req.files['aadharDoc']) updateData.aadharDoc = `/uploads/${req.files['aadharDoc'][0].filename}`;
+    if (req.files['panDoc']) updateData.panDoc = `/uploads/${req.files['panDoc'][0].filename}`;
+    if (req.files['voterDoc']) updateData.voterDoc = `/uploads/${req.files['voterDoc'][0].filename}`;
+    if (req.files['addressProofDoc']) updateData.addressProofDoc = `/uploads/${req.files['addressProofDoc'][0].filename}`;
+
+    const updatedUser = await prisma.user.update({
+      where: { id: targetId },
+      data: updateData,
+      include: {
+        manager: {
+          select: { id: true, displayName: true }
+        }
+      }
+    });
+
+    const { password: _, ...safeUser } = updatedUser;
+    res.json(safeUser);
+  } catch (error) {
+    console.error('Upload KYC error:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
 module.exports = {
   createEmployee,
   getMyProfile,
@@ -351,5 +418,6 @@ module.exports = {
   getInvitedEmails,
   inviteEmail,
   removeInvitedEmail,
-  updateEmployeeById
+  updateEmployeeById,
+  uploadKycDocs
 };

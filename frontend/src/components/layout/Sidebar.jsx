@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Users, CalendarDays, Wallet, UserPlus, Clock, ShieldCheck, Mail, Bell, Settings, LogOut, User } from 'lucide-react';
+import { Users, CalendarDays, Wallet, UserPlus, Clock, ShieldCheck, Mail, Bell, Settings, LogOut, User, LayoutDashboard } from 'lucide-react';
 import { Avatar } from '../ui/Avatar';
 
 const Sidebar = ({ user }) => {
@@ -45,14 +45,14 @@ const Sidebar = ({ user }) => {
   return (
     <div className="flex flex-col h-full bg-transparent p-2 w-[160px] relative">
       {/* Company Logo area */}
-      <div className="flex items-center justify-center pt-4 pb-2 px-4 mb-2 w-full">
+      <div className="flex items-center justify-center pt-0 pb-4 px-4 mb-0 w-full">
         <img src="/Crew.png" alt="Crew HR Logo" className="w-full h-auto object-contain drop-shadow-sm" />
       </div>
       
       <nav className="flex flex-col gap-1 flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar px-1">
-        <Link to="/dashboard" className={getLinkClass('/dashboard')} title="Employees">
-          <Users size={18} className="shrink-0" />
-          <span className="whitespace-nowrap">Employees</span>
+        <Link to="/dashboard" className={getLinkClass('/dashboard')} title={isAdmin ? "Employees" : "Dashboard"}>
+          {isAdmin ? <Users size={18} className="shrink-0" /> : <LayoutDashboard size={18} className="shrink-0" />}
+          <span className="whitespace-nowrap">{isAdmin ? "Employees" : "Dashboard"}</span>
         </Link>
 
         <Link to="/dashboard/attendance" className={getLinkClass('/dashboard/attendance')} title="Attendance">
@@ -80,6 +80,10 @@ const Sidebar = ({ user }) => {
             <Link to="/dashboard/payroll" className={getLinkClass('/dashboard/payroll')} title="Payroll">
                <Wallet size={18} className="shrink-0" />
                <span className="whitespace-nowrap truncate">Payroll</span>
+            </Link>
+            <Link to="/dashboard/leave-approvals" className={getLinkClass('/dashboard/leave-approvals')} title="Leave Approvals">
+               <CalendarDays size={18} className="shrink-0" />
+               <span className="whitespace-nowrap truncate">Leave Approvals</span>
             </Link>
             <Link to="/dashboard/invite-employee" className={getLinkClass('/dashboard/invite-employee')} title="Invite Employees">
                <Mail size={18} className="shrink-0" />

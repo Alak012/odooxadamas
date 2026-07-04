@@ -3,6 +3,22 @@ const router = express.Router();
 const auth = require('../middleware/auth');
 const authorize = require('../middleware/role');
 const userController = require('../controllers/userController');
+const multer = require('multer');
+const path = require('path');
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, path.join(__dirname, '../../uploads/')),
+  filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname.replace(/\s+/g, '-'))
+});
+const upload = multer({ storage });
+
+// Upload KYC documents
+router.post('/:id/upload-kyc', auth, upload.fields([
+  { name: 'aadharDoc', maxCount: 1 },
+  { name: 'panDoc', maxCount: 1 },
+  { name: 'voterDoc', maxCount: 1 },
+  { name: 'addressProofDoc', maxCount: 1 }
+]), userController.uploadKycDocs);
 
 // Admin only: Create a new employee
 router.post('/', auth, authorize('Admin'), userController.createEmployee);

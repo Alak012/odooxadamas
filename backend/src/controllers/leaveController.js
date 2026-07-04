@@ -4,6 +4,7 @@ const applyLeave = async (req, res) => {
   try {
     const userId = req.user.id;
     const { type, startDate, endDate, reason } = req.body;
+    const attachment = req.file ? `/uploads/${req.file.filename}` : null;
 
     const start = new Date(startDate);
     const end = new Date(endDate);
@@ -19,7 +20,8 @@ const applyLeave = async (req, res) => {
         type,
         startDate: start,
         endDate: end,
-        reason
+        reason,
+        attachment
       }
     });
 
@@ -49,6 +51,19 @@ const getAllLeaves = async (req, res) => {
           select: { displayName: true, department: true, employeeId: true }
         }
       },
+      orderBy: { createdAt: 'desc' }
+    });
+    res.json(leaves);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const getLeavesByUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const leaves = await prisma.leave.findMany({
+      where: { userId },
       orderBy: { createdAt: 'desc' }
     });
     res.json(leaves);
@@ -102,5 +117,6 @@ module.exports = {
   applyLeave,
   getMyLeaves,
   getAllLeaves,
+  getLeavesByUser,
   updateLeaveStatus
 };

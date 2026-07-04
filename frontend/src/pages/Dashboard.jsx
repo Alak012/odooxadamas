@@ -3,6 +3,8 @@ import { Routes, Route, Link, useNavigate, Navigate } from 'react-router-dom';
 import { Users, Plus, Cpu, FileText, FlaskConical } from 'lucide-react';
 import CreateEmployee from './admin/CreateEmployee';
 import ManageAdmins from './admin/ManageAdmins';
+import LeaveApprovals from './admin/LeaveApprovals';
+import { MyProfile } from './MyProfile';
 import InviteEmployee from './admin/InviteEmployee';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -102,78 +104,112 @@ const EmployeeCards = ({ user }) => {
       {/* Card Grid */}
       <div className="flex-1 overflow-y-auto pb-8 custom-scrollbar">
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1,2,3,4,5,6].map(i => (
-              <Card key={i} className="h-48 animate-pulse" />
-            ))}
+          <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden animate-pulse">
+            <div className="w-full">
+              <div className="bg-slate-50/50 border-b border-slate-200/60 py-4 px-6 flex items-center justify-between">
+                 <div className="h-4 bg-slate-200 rounded w-24"></div>
+                 <div className="h-4 bg-slate-200 rounded w-24 hidden md:block"></div>
+                 <div className="h-4 bg-slate-200 rounded w-24 hidden md:block"></div>
+                 <div className="h-4 bg-slate-200 rounded w-16"></div>
+                 <div className="h-4 bg-slate-200 rounded w-20"></div>
+              </div>
+              <div className="divide-y divide-slate-100">
+                {[1, 2, 3, 4, 5, 6].map(i => (
+                  <div key={i} className="py-4 px-6 flex items-center justify-between">
+                    <div className="flex items-center gap-3 w-1/3">
+                      <div className="w-10 h-10 rounded-full bg-slate-200 shrink-0"></div>
+                      <div className="w-full max-w-[140px] space-y-2">
+                         <div className="h-4 bg-slate-200 rounded w-full"></div>
+                         <div className="h-3 bg-slate-100 rounded w-2/3"></div>
+                      </div>
+                    </div>
+                    <div className="h-4 bg-slate-200 rounded w-20 hidden md:block"></div>
+                    <div className="h-4 bg-slate-200 rounded w-24 hidden md:block"></div>
+                    <div className="h-6 bg-slate-200 rounded-full w-16"></div>
+                    <div className="h-4 bg-slate-200 rounded w-20 text-right"></div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         ) : filteredEmployees.length === 0 ? (
           <div className="text-center py-20">
             <p className="text-slate-500 text-lg">No employees found in this view.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredEmployees.map((emp) => {
-              // Map some random icons for the "Marketplace" aesthetic based on department
-              let deptIcon = <FileText size={18} />;
-              let deptColor = "text-purple-500";
-              let deptBg = "bg-purple-50";
-              
-              if (emp.department?.toLowerCase().includes('eng') || emp.department?.toLowerCase().includes('dev')) {
-                deptIcon = <Cpu size={18} />;
-                deptColor = "text-blue-500";
-                deptBg = "bg-blue-50";
-              } else if (emp.department?.toLowerCase().includes('lab') || emp.department?.toLowerCase().includes('science')) {
-                deptIcon = <FlaskConical size={18} />;
-                deptColor = "text-green-500";
-                deptBg = "bg-green-50";
-              }
+          <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="bg-slate-50/50 border-b border-slate-200/60 text-slate-500 text-sm">
+                  <th className="py-4 px-6 font-semibold">Employee</th>
+                  <th className="py-4 px-6 font-semibold">Department</th>
+                  <th className="py-4 px-6 font-semibold">Position</th>
+                  <th className="py-4 px-6 font-semibold">Status</th>
+                  <th className="py-4 px-6 font-semibold text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filteredEmployees.map((emp) => {
+                  let statusVariant = 'gray';
+                  let statusText = emp.status || 'UNKNOWN';
+                  if (emp.status === 'Active') {
+                    if (emp.leaves && emp.leaves.length > 0) {
+                      statusText = 'On Leave';
+                      statusVariant = 'amber';
+                    } else if (emp.attendances && emp.attendances.length > 0) {
+                      statusText = 'Present (Clocked In)';
+                      statusVariant = 'emerald';
+                    } else {
+                      statusText = 'Absent (Not Clocked In)';
+                      statusVariant = 'rose';
+                    }
+                  } else if (emp.status === 'Inactive') {
+                    statusVariant = 'red';
+                    statusText = 'Offboarded';
+                  }
 
-              // Map status to badge colors
-              let statusVariant = 'gray';
-              let statusText = emp.status || 'UNKNOWN';
-              if (emp.status === 'Active') {
-                statusVariant = 'blue';
-                statusText = 'Full Time';
-              } else if (emp.status === 'Inactive') {
-                statusVariant = 'red';
-                statusText = 'Offboarded';
-              }
+                  const initials = (emp.displayName || 'U').split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
 
-              return (
-                <Link
-                  key={emp.id}
-                  to={`/dashboard/employee/${emp.id}`}
-                  className="block group"
-                >
-                  <Card className="p-6 flex flex-col h-full hover:-translate-y-1 hover:shadow-lg transition-all duration-300">
-                    <div className="flex justify-between items-start mb-4">
-                      {/* Category icon + label */}
-                      <div className="flex items-center gap-3">
-                        <div className={`w-9 h-9 rounded-full ${deptBg} ${deptColor} flex items-center justify-center`}>
-                          {deptIcon}
+                  return (
+                    <tr key={emp.id} className="hover:bg-slate-50/80 transition-colors group">
+                      <td className="py-4 px-6">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-sm shrink-0">
+                            {initials}
+                          </div>
+                          <div>
+                            <p className="font-bold text-slate-800">{emp.displayName}</p>
+                            <p className="text-xs text-slate-500">ID: {emp.employeeId}</p>
+                          </div>
                         </div>
-                        <span className="font-semibold text-slate-700 text-sm">{emp.department || 'General'}</span>
-                      </div>
-                      
-                      {/* Status Badge */}
-                      <Badge variant={statusVariant}>{statusText}</Badge>
-                    </div>
-
-                    <h3 className="text-xl font-bold text-[#1a1a2e] mb-1 group-hover:text-accent-primary transition-colors">
-                      {emp.displayName}
-                    </h3>
-                    <p className="text-sm text-slate-500 mb-4">ID: {emp.employeeId}</p>
-                    
-                    <div className="h-px bg-slate-100 w-full my-4"></div>
-                    
-                    <span className="text-sm text-slate-400 group-hover:text-accent-primary group-hover:underline decoration-accent-primary/30 underline-offset-4 transition-all">
-                      View details →
-                    </span>
-                  </Card>
-                </Link>
-              );
-            })}
+                      </td>
+                      <td className="py-4 px-6">
+                        <span className="text-sm text-slate-600 font-medium">{emp.department || 'General'}</span>
+                      </td>
+                      <td className="py-4 px-6">
+                        <span className="text-sm text-slate-600">{emp.jobPosition || emp.role}</span>
+                      </td>
+                      <td className="py-4 px-6">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                          statusVariant === 'emerald' ? 'bg-emerald-100 text-emerald-700' : 
+                          statusVariant === 'amber' ? 'bg-amber-100 text-amber-700' : 
+                          statusVariant === 'rose' ? 'bg-rose-100 text-rose-700' : 
+                          statusVariant === 'red' ? 'bg-red-100 text-red-700' : 
+                          'bg-slate-100 text-slate-700'
+                        }`}>
+                          {statusText}
+                        </span>
+                      </td>
+                      <td className="py-4 px-6 text-right">
+                        <Link to={`/dashboard/employee/${emp.id}`} className="inline-flex items-center text-sm font-bold text-indigo-600 hover:text-indigo-800 transition-colors">
+                          View details &rarr;
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
@@ -181,28 +217,7 @@ const EmployeeCards = ({ user }) => {
   );
 };
 
-// ── My Profile placeholder ───────────────────────────────
 
-const MyProfile = () => {
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
-  return (
-    <div className="p-8 md:p-12">
-      <h1 className="text-4xl font-bold text-[#1a1a2e] font-serif tracking-tight mb-8">My Profile</h1>
-      <Card className="p-8 max-w-2xl">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div><span className="text-sm text-slate-400 block mb-1">Name</span><p className="font-semibold text-slate-800">{user.displayName || '-'}</p></div>
-          <div><span className="text-sm text-slate-400 block mb-1">Employee ID</span><p className="font-semibold text-slate-800 font-mono">{user.employeeId || '-'}</p></div>
-          <div><span className="text-sm text-slate-400 block mb-1">Email</span><p className="font-semibold text-slate-800">{user.email || '-'}</p></div>
-          <div><span className="text-sm text-slate-400 block mb-1">Phone</span><p className="font-semibold text-slate-800">{user.phone || '-'}</p></div>
-          <div><span className="text-sm text-slate-400 block mb-1">Role</span><p className="font-semibold text-slate-800">{user.role || '-'}</p></div>
-          <div><span className="text-sm text-slate-400 block mb-1">Department</span><p className="font-semibold text-slate-800">{user.department || '-'}</p></div>
-        </div>
-      </Card>
-    </div>
-  );
-};
-
-// ── Main Dashboard Layout Wrapper ────────────────────────
 
 const Dashboard = () => {
   const [user, setUser] = useState(JSON.parse(localStorage.getItem('user') || '{}'));
@@ -232,13 +247,14 @@ const Dashboard = () => {
       <Routes>
         <Route path="/" element={<EmployeeCards user={user} />} />
         <Route path="/employee/:id" element={<EmployeeDetails user={user} />} />
-        <Route path="/my-profile" element={<Navigate to={`/dashboard/employee/${user?.id}`} replace />} />
+        {/* Removed intercepting Navigate route for my-profile */}
         <Route path="/attendance" element={<Attendance user={user} />} />
         <Route path="/time-off" element={<TimeOff user={user} />} />
         <Route path="/payroll" element={<Payroll user={user} />} />
         <Route path="/add-employee" element={<div className="p-8 md:p-12"><CreateEmployee /></div>} />
         <Route path="/invite-employee" element={<div className="p-8 md:p-12"><InviteEmployee /></div>} />
         <Route path="/manage-admins" element={<div className="p-8 md:p-12"><ManageAdmins /></div>} />
+        <Route path="/leave-approvals" element={<LeaveApprovals />} />
         <Route path="/my-profile" element={<MyProfile />} />
       </Routes>
     </ShellLayout>
