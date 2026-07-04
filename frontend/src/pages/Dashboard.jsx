@@ -10,6 +10,7 @@ import { Input } from '../components/ui/Input';
 import { Badge } from '../components/ui/Badge';
 import { SegmentedControl } from '../components/ui/SegmentedControl';
 import ShellLayout from '../components/layout/ShellLayout';
+import EmployeeDetails from './admin/EmployeeDetails';
 
 // ── Employee Cards View (Marketplace-style grid) ───────
 
@@ -232,6 +233,7 @@ const Dashboard = () => {
     <ShellLayout user={user}>
       <Routes>
         <Route path="/" element={<EmployeeCards user={user} />} />
+        <Route path="/employee/:id" element={<div className="p-8 md:p-12"><EmployeeDetails /></div>} />
         <Route path="/add-employee" element={<div className="p-8 md:p-12"><CreateEmployee /></div>} />
         <Route path="/invite-employee" element={<div className="p-8 md:p-12"><InviteEmployee /></div>} />
         <Route path="/manage-admins" element={<div className="p-8 md:p-12"><ManageAdmins /></div>} />
